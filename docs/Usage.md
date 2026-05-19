@@ -14,6 +14,8 @@ From here you can browse your SD card to launch homebrew and games.
 - L and R: Scroll quickly when there are many items in a folder.
 - Y: Open the cheats panel (see [Cheats](Cheats.md)).
 
+While a game is running, button combos can open an in-game menu to reboot the game, return to the launcher, adjust brightness, or check the time. See [In-game Menu](InGameMenu.md).
+
 The back arrow on the top left of the bottom screen can also be used to go up to the parent folder.
 
 Touch input is also supported.
@@ -48,3 +50,4 @@ Settings are stored on your SD card in `/_pico/settings.json`. They can be edite
 - `theme`: Specifies the folder name of the theme to use. If the theme cannot be found, a default fallback theme will be used.
 - `lastUsedFilePath` - Specifies the path of the most recently launched homebrew or game, such that it can be selected the next time Pico Launcher is started. It is automatically updated by Pico Launcher.
 - `fileAssociations` - See [FileAssociations.md](/docs/FileAssociations.md) for information about how to use this setting.
+- `inGameMenuEnabled`, `defaultBrightness`, `inGameExitHotkey`, `inGameRebootHotkey`, `inGameBrightnessHotkey`, `inGameClockHotkey` - See [InGameMenu.md](/docs/InGameMenu.md).

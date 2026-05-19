@@ -16,6 +16,7 @@ This repository contains Pico Launcher, which is a front-end for [Pico Loader](h
 - [Material Design 3 and custom themes](docs/Themes.md)
 - Support for background music (see [Themes](docs/Themes.md))
 - Support for cheats (See [Cheats](docs/Cheats.md))
+- [In-game menu](docs/InGameMenu.md) for reboot / exit / brightness / clock during retail games
 
 General usage documentation can be found here: [Usage](docs/Usage.md).
 
@@ -62,10 +63,14 @@ For DSpico the final directory structure will look like this:
 │   ├── aplist.bin
 │   ├── savelist.bin
 │   ├── picoLoader7.bin
-│   └── picoLoader9.bin
+│   ├── picoLoader9.bin
+│   └── igm9.bin
 └── _picoboot.nds
 ```
 Note: If you want to play DSiWare on the DSpico, additional files are required. See the [Pico Loader](https://github.com/LNH-team/pico-loader) readme for more information.
+
+> [!NOTE]
+> `igm9.bin` is the in-game menu binary, required for the [in-game menu](docs/InGameMenu.md). It ships with Pico Loader API v4 or newer. If the file is missing, the launcher still works but the in-game menu hotkeys do nothing.
 
 ## License
 
