@@ -28,6 +28,7 @@
 #include "themes/ThemeFactory.h"
 #include "gui/Gx.h"
 #include "splashTop.h"
+#include "services/process/AutoLaunchPending.h"
 #include "App.h"
 
 #define SPLASH_FRAMES       44
@@ -131,6 +132,13 @@ void App::Run()
 
     _ioTaskQueue.StartThread(1, _ioTaskThreadStack, sizeof(_ioTaskThreadStack));
     _bgTaskQueue.StartThread(2, _bgTaskThreadStack, sizeof(_bgTaskThreadStack));
+
+    if (gAutoLaunchPending)
+    {
+        gAutoLaunchPending = false;
+        _romBrowserController.TryLaunchByPath(
+            _appSettingsService.GetAppSettings().lastUsedFilePath.GetString());
+    }
 
     StoreVramState(_vramStateBeforeMakeBottomScreenView);
 

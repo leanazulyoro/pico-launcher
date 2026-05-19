@@ -29,6 +29,8 @@
 #include "gui/font/nitroFont2.h"
 #include "picoLoaderBootstrap.h"
 #include "rtcIpc.h"
+#include "services/process/AutoLaunchPending.h"
+#include "picoLoaderMenuShared.h"
 
 ProcessManager gProcessManager;
 ILogger* gLogger;
@@ -210,6 +212,15 @@ int main(int argc, char* argv[])
     }
 
     initRandomGenerator();
+
+    // Consume the in-game menu's "reboot current ROM" magic before anything
+    // else touches the slot. The App will skip its UI and auto-launch
+    // AppSettings.lastUsedFilePath when this flag is set.
+    if (PLOAD_MENU_RELAUNCH_MAGIC_ADDR == PLOAD_MENU_RELAUNCH_MAGIC)
+    {
+        PLOAD_MENU_RELAUNCH_MAGIC_ADDR = 0;
+        gAutoLaunchPending = true;
+    }
 
     // todo: make sure _pico folder exists
     // maybe warn if important files are missing as well?

@@ -2,8 +2,10 @@
 #include <array>
 #include "picoLoaderBootstrap.h"
 #include "PicoLoaderProcess.h"
+#include "fat/Directory.h"
 #include "FileType/ExtensionFileTypeProvider.h"
 #include "FileType/FileType.h"
+#include "FileType/Folder/FolderFileType.h"
 #include "SdFolderFactory.h"
 #include "services/settings/IAppSettingsService.h"
 #include "cheats/UsrCheatRepositoryFactory.h"
@@ -28,6 +30,68 @@ void RomBrowserController::LaunchFile(const FileInfo& fileInfo)
 {
     _triggerFileInfo = FileInfo(fileInfo);
     _stateMachine.Fire(RomBrowserStateTrigger::Launch);
+}
+
+bool RomBrowserController::TryLaunchByPath(const TCHAR* path)
+{
+    if (!path || !path[0])
+        return false;
+
+    const TCHAR* lastSlash = strrchr(path, '/');
+    if (!lastSlash)
+        return false;
+
+    TCHAR parentPath[256];
+    u32 parentLen = lastSlash - path;
+    if (parentLen >= sizeof(parentPath) / sizeof(parentPath[0]))
+        return false;
+    if (parentLen == 0)
+    {
+        parentPath[0] = '/';
+        parentPath[1] = 0;
+    }
+    else
+    {
+        memcpy(parentPath, path, parentLen * sizeof(TCHAR));
+        parentPath[parentLen] = 0;
+    }
+
+    const TCHAR* fileName = lastSlash + 1;
+    if (!fileName[0])
+        return false;
+
+    Directory directory;
+    if (directory.Open(parentPath) != FR_OK)
+        return false;
+
+    FILINFO sdFileInfo;
+    while (true)
+    {
+        if (directory.Read(&sdFileInfo) != FR_OK)
+            return false;
+        if (sdFileInfo.fname[0] == 0)
+            return false;
+        if (strcasecmp(sdFileInfo.fname, fileName) == 0)
+            break;
+    }
+
+    const FileType* fileType = (sdFileInfo.fattrib & AM_DIR)
+        ? &FolderFileType::sInstance
+        : _fileTypeProvider.GetFileType(sdFileInfo.fname);
+    if (!fileType)
+        return false;
+
+    _triggerFileInfo = FileInfo(sdFileInfo.fname, fileType,
+        FastFileRef(directory.GetFatFsDirectory(), &sdFileInfo), sdFileInfo.fattrib);
+    StringUtil::Copy(_navigatePath, path, sizeof(_navigatePath) / sizeof(_navigatePath[0]));
+
+    // chdir so UpdateLastUsedFilepath's f_getcwd resolves to the rom's parent dir
+    // (mirrors the working dir state user-driven launches normally start from).
+    if (f_chdir(parentPath) != FR_OK)
+        return false;
+
+    _stateMachine.Fire(RomBrowserStateTrigger::Launch);
+    return true;
 }
 
 void RomBrowserController::ShowGameInfo(const FileInfo& fileInfo)
