@@ -77,4 +77,5 @@ private:
     void UpdateLastUsedFilepath();
     void SetPicoLoaderParams() const;
     void LoadCheats() const;
+    void SetMenuConfig() const;
 };
