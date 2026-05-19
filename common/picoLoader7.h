@@ -1,7 +1,7 @@
 #pragma once
 
 /// @brief The Pico Loader API version supported by this header file.
-#define PICO_LOADER_API_VERSION     3
+#define PICO_LOADER_API_VERSION     4
 
 /// @brief Enum to specify the drive to boot from.
 typedef enum
@@ -83,6 +83,43 @@ typedef struct
     const pload_cheats_t* cheats;
 } pload_header7_v3_t;
 
+/// @brief Flags for \see pload_header7_v4_t.flags.
+typedef enum
+{
+    /// @brief Enables the in-game menu.
+    PLOAD_MENU_FLAG_ENABLED = 1u << 0,
+
+    /// @brief Show a brief on-screen toast when a menu action fires.
+    PLOAD_MENU_FLAG_TOAST_ENABLED = 1u << 1
+} PicoLoaderMenuFlags;
+
+/// @brief Struct representing the API version 4 part of the header of picoLoader7.bin.
+///        Contains configuration for the in-game menu (button-combo hotkeys that work in
+///        any booted ROM, including retail).
+typedef struct
+{
+    /// @brief Bitmask of KEY_* values that returns to the launcher when held.
+    u16 exitHotkey;
+
+    /// @brief Bitmask of KEY_* values that reboots the current ROM via launcher round-trip.
+    u16 rebootHotkey;
+
+    /// @brief Bitmask of KEY_* values that cycles the screen brightness.
+    u16 brightnessHotkey;
+
+    /// @brief Bitmask of KEY_* values that briefly displays the current time as a toast.
+    u16 clockHotkey;
+
+    /// @brief Initial brightness level (0..3) applied at ROM boot.
+    u8 defaultBrightness;
+
+    /// @brief Flags for the in-game menu. See \see PicoLoaderMenuFlags.
+    u8 flags;
+
+    /// @brief Reserved for future use; must be zero.
+    u16 _reserved;
+} pload_header7_v4_t;
+
 /// @brief Struct representing the header of picoLoader7.bin.
 typedef struct
 {
@@ -106,4 +143,7 @@ typedef struct
 
     /// @brief The API version 3 part of the header. Only access this when \see apiVersion >= 3.
     pload_header7_v3_t v3;
+
+    /// @brief The API version 4 part of the header. Only access this when \see apiVersion >= 4.
+    pload_header7_v4_t v4;
 } pload_header7_t;
