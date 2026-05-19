@@ -16,6 +16,12 @@
 #define KEY_LAST_USED_FILE_PATH      "lastUsedFilePath"
 #define KEY_FILE_ASSOCIATIONS        "fileAssociations"
 #define KEY_FILE_ASSOCIATIONS_APPLICATION_PATH  "appPath"
+#define KEY_IN_GAME_MENU_ENABLED        "inGameMenuEnabled"
+#define KEY_IN_GAME_EXIT_HOTKEY         "inGameExitHotkey"
+#define KEY_IN_GAME_REBOOT_HOTKEY       "inGameRebootHotkey"
+#define KEY_IN_GAME_BRIGHTNESS_HOTKEY   "inGameBrightnessHotkey"
+#define KEY_IN_GAME_CLOCK_HOTKEY        "inGameClockHotkey"
+#define KEY_DEFAULT_BRIGHTNESS          "defaultBrightness"
 
 static const char* serializeRomBrowserLayout(RomBrowserLayout romBrowserLayout)
 {
@@ -121,6 +127,76 @@ static void serializeFileAssociations(DynamicJsonDocument& json, const AppSettin
     }
 }
 
+static const char* serializeInputKey(InputKey key)
+{
+    switch (key)
+    {
+        case InputKey::A:         return "A";
+        case InputKey::B:         return "B";
+        case InputKey::Select:    return "Select";
+        case InputKey::Start:     return "Start";
+        case InputKey::DpadRight: return "DpadRight";
+        case InputKey::DpadLeft:  return "DpadLeft";
+        case InputKey::DpadUp:    return "DpadUp";
+        case InputKey::DpadDown:  return "DpadDown";
+        case InputKey::R:         return "R";
+        case InputKey::L:         return "L";
+        case InputKey::X:         return "X";
+        case InputKey::Y:         return "Y";
+        default:                  return nullptr;
+    }
+}
+
+static bool tryParseInputKey(const char* s, InputKey& key)
+{
+    if (!s)
+        return false;
+    if (!strcasecmp(s, "A"))              key = InputKey::A;
+    else if (!strcasecmp(s, "B"))         key = InputKey::B;
+    else if (!strcasecmp(s, "Select"))    key = InputKey::Select;
+    else if (!strcasecmp(s, "Start"))     key = InputKey::Start;
+    else if (!strcasecmp(s, "DpadRight")) key = InputKey::DpadRight;
+    else if (!strcasecmp(s, "DpadLeft"))  key = InputKey::DpadLeft;
+    else if (!strcasecmp(s, "DpadUp"))    key = InputKey::DpadUp;
+    else if (!strcasecmp(s, "DpadDown"))  key = InputKey::DpadDown;
+    else if (!strcasecmp(s, "R"))         key = InputKey::R;
+    else if (!strcasecmp(s, "L"))         key = InputKey::L;
+    else if (!strcasecmp(s, "X"))         key = InputKey::X;
+    else if (!strcasecmp(s, "Y"))         key = InputKey::Y;
+    else return false;
+    return true;
+}
+
+static void serializeInputKeyMask(DynamicJsonDocument& json, const char* key, InputKey mask)
+{
+    auto arr = json[key].to<JsonArray>();
+    for (u16 i = 0; i < 16; i++)
+    {
+        auto bit = static_cast<InputKey>(1u << i);
+        if ((mask & bit) == InputKey::None)
+            continue;
+        const char* name = serializeInputKey(bit);
+        if (name)
+            arr.add(name);
+    }
+}
+
+static bool tryParseInputKeyMask(JsonVariantConst json, InputKey& mask)
+{
+    if (!json.is<JsonArrayConst>())
+        return false;
+    InputKey result = InputKey::None;
+    for (auto element : json.as<JsonArrayConst>())
+    {
+        InputKey key;
+        if (!tryParseInputKey(element.as<const char*>(), key))
+            return false;
+        result |= key;
+    }
+    mask = result;
+    return true;
+}
+
 static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& length)
 {
     DynamicJsonDocument json(JSON_RESERVED_SIZE);
@@ -130,6 +206,13 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
     json[KEY_THEME] = appSettings->theme.GetString();
     json[KEY_LAST_USED_FILE_PATH] = appSettings->lastUsedFilePath.GetString();
     serializeFileAssociations(json, appSettings);
+
+    json[KEY_IN_GAME_MENU_ENABLED] = appSettings->inGameMenuEnabled;
+    json[KEY_DEFAULT_BRIGHTNESS] = appSettings->defaultBrightness;
+    serializeInputKeyMask(json, KEY_IN_GAME_EXIT_HOTKEY,       appSettings->inGameExitHotkey);
+    serializeInputKeyMask(json, KEY_IN_GAME_REBOOT_HOTKEY,     appSettings->inGameRebootHotkey);
+    serializeInputKeyMask(json, KEY_IN_GAME_BRIGHTNESS_HOTKEY, appSettings->inGameBrightnessHotkey);
+    serializeInputKeyMask(json, KEY_IN_GAME_CLOCK_HOTKEY,      appSettings->inGameClockHotkey);
 
     u32 outputSize = measureJsonPretty(json);
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[outputSize]);
@@ -182,6 +265,19 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
     }
 
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
+
+    appSettings->inGameMenuEnabled = json[KEY_IN_GAME_MENU_ENABLED] | appSettings->inGameMenuEnabled;
+    appSettings->defaultBrightness = json[KEY_DEFAULT_BRIGHTNESS] | appSettings->defaultBrightness;
+
+    InputKey hotkey;
+    if (tryParseInputKeyMask(json[KEY_IN_GAME_EXIT_HOTKEY], hotkey))
+        appSettings->inGameExitHotkey = hotkey;
+    if (tryParseInputKeyMask(json[KEY_IN_GAME_REBOOT_HOTKEY], hotkey))
+        appSettings->inGameRebootHotkey = hotkey;
+    if (tryParseInputKeyMask(json[KEY_IN_GAME_BRIGHTNESS_HOTKEY], hotkey))
+        appSettings->inGameBrightnessHotkey = hotkey;
+    if (tryParseInputKeyMask(json[KEY_IN_GAME_CLOCK_HOTKEY], hotkey))
+        appSettings->inGameClockHotkey = hotkey;
 }
 
 bool JsonAppSettingsSerializer::Deserialize(AppSettings* appSettings, const char* filePath) const
