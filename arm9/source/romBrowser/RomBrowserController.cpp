@@ -193,6 +193,7 @@ void RomBrowserController::HandleLaunchTrigger()
         UpdateLastUsedFilepath();
         SetPicoLoaderParams();
         LoadCheats();
+        SetMenuConfig();
         return TaskResult<void>::Completed();
     });
 }
@@ -237,4 +238,19 @@ void RomBrowserController::LoadCheats() const
     auto cheats = _cheatRepository->GetCheatsForGame(_triggerFileInfo.GetFastFileRef());
     auto cheatData = PicoLoaderCheatDataFactory().CreateCheatData(cheats);
     pload_setCheatData(cheatData);
+}
+
+void RomBrowserController::SetMenuConfig() const
+{
+    // The loader's arm7 menu patch reads REG_KEYINPUT only (bits 0-9), so X / Y /
+    // Touch / Lid bits of InputKey are dropped here. Tracked in launcher 2.4 docs.
+    const auto& settings = _appSettingsService->GetAppSettings();
+    pload_header7_v4_t menuConfig{};
+    menuConfig.exitHotkey       = static_cast<u16>(settings.inGameExitHotkey)       & 0x3FF;
+    menuConfig.rebootHotkey     = static_cast<u16>(settings.inGameRebootHotkey)     & 0x3FF;
+    menuConfig.brightnessHotkey = static_cast<u16>(settings.inGameBrightnessHotkey) & 0x3FF;
+    menuConfig.clockHotkey      = static_cast<u16>(settings.inGameClockHotkey)      & 0x3FF;
+    menuConfig.defaultBrightness = settings.defaultBrightness;
+    menuConfig.flags = settings.inGameMenuEnabled ? PLOAD_MENU_FLAG_ENABLED : 0;
+    pload_setMenuConfig(menuConfig);
 }
