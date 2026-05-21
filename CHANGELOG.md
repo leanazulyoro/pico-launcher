@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- In-game menu hotkeys for reboot, exit-to-launcher, brightness, and clock display. Triggered by configurable button combos held while a game is running. Requires Pico Loader API v4 or newer and `/_pico/igm9.bin`. See [InGameMenu.md](docs/InGameMenu.md).
+
 ## [v1.3.0] - 18 Apr 2026
 
 ### Added
